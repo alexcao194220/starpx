@@ -1,0 +1,18 @@
+{
+  "UserAgent": "aws-amplify/5.0.4",
+  "Version": "1.0",
+  "CredentialsProvider": "CognitoIdentity",
+  "IdentityManager": {
+    "Default": {
+      "PoolId": "eu-central-1_OW0g61kEk",
+      "Region": "eu-central-1"
+    }
+  },
+  "CognitoUserPool": {
+    "Default": {
+      "PoolId": "eu-central-1_OW0g61kEk",
+      "AppClientId": "34fbjieukpdaq7m6q35ge10ei",
+      "Region": "eu-central-1"
+    }
+  }
+}

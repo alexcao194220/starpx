@@ -1,0 +1,589 @@
+type Query {
+  getUserProfile: UserProfile
+
+  getUserConnect: UserConnect
+
+  requestFileUploadUrl: FileUploadUrl
+
+  """
+    Request a file(s) upload session by providing a list of files intended to be uploaded.
+   This is the new scheme using backblaze-B2
+  """
+  requestFileUploadSessionB2(files: [FileUploadRequest!]!): FileUploadSessionResponseB2
+
+  notifyFileUploadComplete(files: [FileUploadComplete!]!): FileUploadSession
+
+  getImageSetSummaries(limit: Int, nextToken: String, customerId: String!): ImageSetSummaryCursor!
+
+  getImageJobs(limit: Int, nextToken: String, statusFilter: String, customerId: String!): ImageJobCursor!
+
+  getImageSetSummary(setId: String!): ImageSetSummary
+}
+
+type UserProfile {
+  email: String!
+
+  picture: String
+
+  fullname: String
+
+  address: AWSJSON
+
+  region: String
+
+  country: String
+
+  timezone: String
+}
+
+"""
+Built-in String
+"""
+scalar String
+
+"""
+The `AWSJSON` scalar type provided by AWS AppSync, represents a JSON string that complies with [RFC 8259](https://tools.ietf.org/html/rfc8259).  Maps like "**{\\"upvotes\\": 10}**", lists like "**[1,2,3]**", and scalar values like "**\\"AWSJSON example string\\"**", "**1**", and "**true**" are accepted as valid JSON and will automatically be parsed and loaded in the resolver mapping templates as Maps, Lists, or Scalar values rather than as the literal input strings.  Invalid JSON strings like "**{a: 1}**", "**{'a': 1}**" and "**Unquoted string**" will throw GraphQL validation errors.
+"""
+scalar AWSJSON
+
+type UserConnect {
+  userProfile: UserProfile
+}
+
+"""
+  Server returned type to indicate where to upload a certain file
+"""
+type FileUploadUrl {
+  """
+    User-provided unique ID (fuid) from corresponding FileUploadRequest
+  """
+  fuid: String!
+
+  """
+    POST endpoint for uploading file
+  """
+  url: String!
+
+  """
+    Unix epoch timestamp until when upload URL is valid
+  """
+  expiry: Int
+}
+
+"""
+Built-in Int
+"""
+scalar Int
+
+type FileUploadSessionResponseB2 {
+  session: FileUploadSession!
+
+  paths: [FileUploadPathB2!]
+
+  b2_upload_endpoints: [B2UploadEndpoint!]
+
+  b2_part_upload_endpoints: [B2PartUploadEndpoint]
+}
+
+"""
+  Response type which contains information about our FileUploadSession
+"""
+type FileUploadSession {
+  """
+    Indicates wether server accepted user's FileUploadRequest
+  """
+  accepted: Boolean!
+
+  """
+    If not accepted, human readable reason for denial
+  """
+  error: String
+
+  """
+    Server generated session id which can be used to communicate to server about this session
+  """
+  sid: String
+}
+
+"""
+Built-in Boolean
+"""
+scalar Boolean
+
+"""
+  Server returned type to indicate where to upload a certain file
+"""
+type FileUploadPathB2 {
+  """
+    User-provided unique ID (fuid) from corresponding FileUploadRequest
+  """
+  fuid: String!
+
+  """
+    bucket-relative location (value passed to X-Bz-File-Name header)
+  """
+  b2_path: String!
+}
+
+type B2UploadEndpoint {
+  b2_authtoken: String!
+
+  b2_uploadurl: String!
+}
+
+type B2PartUploadEndpoint {
+  fuid: String!
+
+  b2_upload_endpoints: [B2UploadEndpoint!]!
+}
+
+"""
+  A single local file which we intend to upload
+"""
+input FileUploadRequest {
+  """
+    The full qualified path name, Ex: C:\some_folder\some_file.jpg
+  """
+  origin_path: String!
+
+  """
+    Epoch timestamp when last modified
+  """
+  origin_last_modified: Int
+
+  """
+    If available, the MIME type for the file. Ex: image/jpg
+  """
+  mime_type: String
+
+  """
+    Byte size of the file
+  """
+  size: Int!
+
+  """
+    A user (auto-)generated unique identifier to refer to this specific file.
+   This id will be used by the backend to communicate information about this file during the upload session
+   and afterwards for specific analysis results
+  """
+  fuid: String!
+}
+
+input FileUploadComplete {
+  sid: String!
+
+  fuid: String!
+
+  shasum: [String]
+}
+
+type ImageSetSummaryCursor {
+  image_sets: [ImageSetSummary]
+
+  nextToken: String
+}
+
+type ImageSetSummary {
+  caption: String!
+
+  set_id: String!
+
+  state: String!
+
+  creation_timestamp: Int!
+
+  updated_timestamp: Int
+
+  sub_count: String
+
+  set_byte_size: String
+
+  image_detail: ImageDetail
+
+  overlay: ImageOverlay
+}
+
+type ImageDetail {
+  full_byte_size: Int
+
+  full_height: Int
+
+  full_width: Int
+
+  full_url: String
+
+  thumbs: ImageThumbs
+}
+
+type ImageThumbs {
+  icon: String
+
+  small: String
+
+  medium: String
+
+  large: String
+
+  xlarge: String
+
+  hd: String
+
+  full: String
+}
+
+type ImageOverlay {
+  type: String
+
+  full: String
+}
+
+type ImageJobCursor {
+  image_jobs: [ImageJob]
+
+  nextToken: String
+}
+
+type ImageJob {
+  job_id: String
+
+  job_count: Int
+
+  image_set_id: String
+
+  creation_timestamp: Int
+
+  complete_pct: Float
+
+  thumbs: ImageThumbs
+
+  caption: String
+
+  status: String
+}
+
+"""
+Built-in Float
+"""
+scalar Float
+
+type Mutation {
+  setUserProfile(profile: AWSJSON!): UserProfile
+
+  setUserFingerprint(id: String!): Boolean!
+}
+
+"""
+  Server response to requestFileUploadSession, refreshFileUploadSession
+"""
+type FileUploadSessionResponse {
+  """
+    Session information
+  """
+  session: FileUploadSession!
+
+  """
+    Upload URLs. If there was an error, this field will not be present. Otherwise, it will contain 1 or more upload URLs.
+  """
+  urls: [FileUploadUrl!]
+}
+
+type UserUiProfile {
+  theme: String
+}
+
+"""
+A GraphQL Introspection defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, the entry points for query, mutation, and subscription operations.
+"""
+type __Schema {
+  """
+  A list of all types supported by this server.
+  """
+  types: [__Type!]!
+
+  """
+  The type that query operations will be rooted at.
+  """
+  queryType: __Type!
+
+  """
+  If this server supports mutation, the type that mutation operations will be rooted at.
+  """
+  mutationType: __Type
+
+  """
+  'A list of all directives supported by this server.
+  """
+  directives: [__Directive!]!
+
+  """
+  'If this server support subscription, the type that subscription operations will be rooted at.
+  """
+  subscriptionType: __Type
+}
+
+type __Type {
+  kind: __TypeKind!
+
+  name: String
+
+  description: String
+
+  fields(includeDeprecated: Boolean = false): [__Field!]
+
+  interfaces: [__Type!]
+
+  possibleTypes: [__Type!]
+
+  enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
+
+  inputFields: [__InputValue!]
+
+  ofType: __Type
+}
+
+"""
+An enum describing what kind of type a given __Type is
+"""
+enum __TypeKind {
+  """
+  Indicates this type is a scalar.
+  """
+  SCALAR
+
+  """
+  Indicates this type is an object. `fields` and `interfaces` are valid fields.
+  """
+  OBJECT
+
+  """
+  Indicates this type is an interface. `fields` and `possibleTypes` are valid fields.
+  """
+  INTERFACE
+
+  """
+  Indicates this type is a union. `possibleTypes` is a valid field.
+  """
+  UNION
+
+  """
+  Indicates this type is an enum. `enumValues` is a valid field.
+  """
+  ENUM
+
+  """
+  Indicates this type is an input object. `inputFields` is a valid field.
+  """
+  INPUT_OBJECT
+
+  """
+  Indicates this type is a list. `ofType` is a valid field.
+  """
+  LIST
+
+  """
+  Indicates this type is a non-null. `ofType` is a valid field.
+  """
+  NON_NULL
+}
+
+type __Field {
+  name: String!
+
+  description: String
+
+  args: [__InputValue!]!
+
+  type: __Type!
+
+  isDeprecated: Boolean!
+
+  deprecationReason: String
+}
+
+type __InputValue {
+  name: String!
+
+  description: String
+
+  type: __Type!
+
+  defaultValue: String
+}
+
+type __EnumValue {
+  name: String!
+
+  description: String
+
+  isDeprecated: Boolean!
+
+  deprecationReason: String
+}
+
+type __Directive {
+  name: String
+
+  description: String
+
+  locations: [__DirectiveLocation!]
+
+  args: [__InputValue!]!
+
+  onOperation: Boolean @deprecated(reason: "Use `locations`.")
+
+  onFragment: Boolean @deprecated(reason: "Use `locations`.")
+
+  onField: Boolean @deprecated(reason: "Use `locations`.")
+}
+
+"""
+An enum describing valid locations where a directive can be placed
+"""
+enum __DirectiveLocation {
+  """
+  Indicates the directive is valid on queries.
+  """
+  QUERY
+
+  """
+  Indicates the directive is valid on mutations.
+  """
+  MUTATION
+
+  """
+  Indicates the directive is valid on fields.
+  """
+  FIELD
+
+  """
+  Indicates the directive is valid on fragment definitions.
+  """
+  FRAGMENT_DEFINITION
+
+  """
+  Indicates the directive is valid on fragment spreads.
+  """
+  FRAGMENT_SPREAD
+
+  """
+  Indicates the directive is valid on inline fragments.
+  """
+  INLINE_FRAGMENT
+
+  """
+  Indicates the directive is valid on a schema SDL definition.
+  """
+  SCHEMA
+
+  """
+  Indicates the directive is valid on a scalar SDL definition.
+  """
+  SCALAR
+
+  """
+  Indicates the directive is valid on an object SDL definition.
+  """
+  OBJECT
+
+  """
+  Indicates the directive is valid on a field SDL definition.
+  """
+  FIELD_DEFINITION
+
+  """
+  Indicates the directive is valid on a field argument SDL definition.
+  """
+  ARGUMENT_DEFINITION
+
+  """
+  Indicates the directive is valid on an interface SDL definition.
+  """
+  INTERFACE
+
+  """
+  Indicates the directive is valid on an union SDL definition.
+  """
+  UNION
+
+  """
+  Indicates the directive is valid on an enum SDL definition.
+  """
+  ENUM
+
+  """
+  Indicates the directive is valid on an enum value SDL definition.
+  """
+  ENUM_VALUE
+
+  """
+  Indicates the directive is valid on an input object SDL definition.
+  """
+  INPUT_OBJECT
+
+  """
+  Indicates the directive is valid on an input object field SDL definition.
+  """
+  INPUT_FIELD_DEFINITION
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true
+"""
+directive @include ("Included when true." if: Boolean!) on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+
+"""
+Directs the executor to skip this field or fragment when the `if`'argument is true.
+"""
+directive @skip ("Skipped when true." if: Boolean!) on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+
+"""
+This directive allows results to be deferred during execution
+"""
+directive @defer on FIELD
+
+"""
+Tells the service this field/object has access authorized by an API key.
+"""
+directive @aws_api_key on OBJECT|FIELD_DEFINITION
+
+"""
+Tells the service this field/object has access authorized by an OIDC token.
+"""
+directive @aws_oidc on OBJECT|FIELD_DEFINITION
+
+"""
+Tells the service this field/object has access authorized by sigv4 signing.
+"""
+directive @aws_iam on OBJECT|FIELD_DEFINITION
+
+directive @deprecated (reason: String = "No longer supported") on FIELD_DEFINITION|ENUM_VALUE
+
+"""
+Tells the service this field/object has access authorized by a Cognito User Pools token.
+"""
+directive @aws_cognito_user_pools ("List of cognito user pool groups which have access on this field" cognito_groups: [String]) on OBJECT|FIELD_DEFINITION
+
+"""
+Tells the service which subscriptions will be published to when this mutation is called. This directive is deprecated use @aws_susbscribe directive instead.
+"""
+directive @aws_publish ("List of subscriptions which will be published to when this mutation is called." subscriptions: [String]) on FIELD_DEFINITION
+
+"""
+Directs the schema to enforce authorization on a field
+"""
+directive @aws_auth ("List of cognito user pool groups which have access on this field" cognito_groups: [String]) on FIELD_DEFINITION
+
+"""
+Tells the service this field/object has access authorized by a Lambda Authorizer.
+"""
+directive @aws_lambda on OBJECT|FIELD_DEFINITION
+
+"""
+Tells the service which mutation triggers this subscription.
+"""
+directive @aws_subscribe ("List of mutations which will trigger this subscription when they are called." mutations: [String]) on FIELD_DEFINITION
+
+schema {
+  query: Query
+  mutation: Mutation
+}
